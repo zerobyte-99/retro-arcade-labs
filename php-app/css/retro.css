@@ -1,0 +1,220 @@
+/* Retro Arcade Labs - Global Styles */
+:root {
+    --bg-dark: #0a0a0f;
+    --bg-card: #1a1a2e;
+    --neon-cyan: #00fff5;
+    --neon-magenta: #ff00ff;
+    --neon-yellow: #ffff00;
+    --text-primary: #00fff5;
+    --text-secondary: #ff00ff;
+    --border-color: #00fff5;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    background: var(--bg-dark);
+    color: var(--text-primary);
+    font-family: 'Courier New', monospace;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+}
+
+/* CRT Scanline Effect */
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.1),
+        rgba(0, 0, 0, 0.1) 1px,
+        transparent 1px,
+        transparent 2px
+    );
+    pointer-events: none;
+    z-index: 10000;
+}
+
+/* Typography */
+h1, h2, h3 {
+    text-shadow: 0 0 10px currentColor;
+}
+
+h1 { color: var(--neon-magenta); }
+h2 { color: var(--neon-yellow); }
+h3 { color: var(--neon-cyan); }
+
+/* Links */
+a {
+    color: var(--neon-cyan);
+    text-decoration: none;
+    transition: color 0.3s, text-shadow 0.3s;
+}
+
+a:hover {
+    color: var(--neon-magenta);
+    text-shadow: 0 0 10px var(--neon-magenta);
+}
+
+/* Buttons */
+.btn, button {
+    background: var(--neon-magenta);
+    color: var(--bg-dark);
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: bold;
+    border-radius: 5px;
+    transition: all 0.3s;
+}
+
+.btn:hover, button:hover {
+    background: var(--neon-cyan);
+    box-shadow: 0 0 20px var(--neon-cyan);
+}
+
+/* Forms */
+input, textarea, select {
+    background: var(--bg-dark);
+    border: 1px solid var(--neon-cyan);
+    color: var(--neon-cyan);
+    padding: 10px;
+    font-family: inherit;
+    border-radius: 5px;
+}
+
+input:focus, textarea:focus, select:focus {
+    outline: none;
+    box-shadow: 0 0 10px var(--neon-cyan);
+}
+
+/* Cards */
+.card {
+    background: var(--bg-card);
+    border: 2px solid var(--neon-cyan);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 30px var(--neon-cyan);
+}
+
+/* Navigation */
+.nav {
+    background: var(--bg-card);
+    padding: 20px;
+    border-bottom: 2px solid var(--neon-magenta);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nav-brand {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: var(--neon-magenta);
+}
+
+.nav-links a {
+    margin-left: 20px;
+}
+
+/* Grid */
+.grid {
+    display: grid;
+    gap: 20px;
+}
+
+.grid-2 { grid-template-columns: repeat(2, 1fr); }
+.grid-3 { grid-template-columns: repeat(3, 1fr); }
+.grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+@media (max-width: 768px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+}
+
+/* Price */
+.price {
+    color: var(--neon-yellow);
+    font-size: 1.5em;
+    font-weight: bold;
+}
+
+/* Alerts */
+.alert {
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+.alert-error {
+    background: #330000;
+    border: 2px solid #ff3333;
+    color: #ff3333;
+}
+
+.alert-success {
+    background: #003300;
+    border: 2px solid #00ff00;
+    color: #00ff00;
+}
+
+/* Footer */
+.footer {
+    background: var(--bg-card);
+    padding: 20px;
+    text-align: center;
+    border-top: 2px solid var(--neon-magenta);
+    margin-top: 50px;
+}
+
+/* Tables */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 15px;
+    text-align: left;
+    border-bottom: 1px solid #333;
+}
+
+th {
+    color: var(--neon-yellow);
+}
+
+/* Glow effects */
+.glow-cyan { text-shadow: 0 0 10px var(--neon-cyan); }
+.glow-magenta { text-shadow: 0 0 10px var(--neon-magenta); }
+.glow-yellow { text-shadow: 0 0 10px var(--neon-yellow); }
+
+/* Scanlines overlay */
+.scanlines {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.1),
+        rgba(0, 0, 0, 0.1) 1px,
+        transparent 1px,
+        transparent 2px
+    );
+    pointer-events: none;
+    z-index: 1000;
+}

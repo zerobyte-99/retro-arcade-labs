@@ -1,0 +1,11 @@
+# Git ignore for Retro Arcade Labs
+node_modules/
+dist/
+.env
+*.log
+.DS_Store
+*.swp
+*.swo
+.vscode/
+.idea/
+*.bak

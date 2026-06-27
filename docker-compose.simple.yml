@@ -1,0 +1,50 @@
+# Retro Arcade Labs - Simple 2-Container Setup
+# PHP + MySQL only
+
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: retro-arcade-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: LOCAL_ONLY_ROOT_PWD
+      MYSQL_DATABASE: retro_arcade
+      MYSQL_USER: retro_arcade
+      MYSQL_PASSWORD: retro_password
+    ports:
+      - "127.0.0.1:3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./scripts/seed.sql:/docker-entrypoint-initdb.d/seed.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  php-app:
+    build:
+      context: ./php-app
+      dockerfile: Dockerfile
+    container_name: retro-arcade-php
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: retro_arcade
+      DB_USERNAME: retro_arcade
+      DB_PASSWORD: retro_password
+    ports:
+      - "127.0.0.1:8470:8470"
+    volumes:
+      - ./php-app:/var/www/html:rw
+      - php_uploads:/var/www/html/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  php_uploads:

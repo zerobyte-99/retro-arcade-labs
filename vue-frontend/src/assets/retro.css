@@ -1,0 +1,89 @@
+/* Retro Arcade Labs - Vue.js Styles */
+:root {
+    --bg-dark: #0a0a0f;
+    --bg-card: #1a1a2e;
+    --neon-cyan: #00fff5;
+    --neon-magenta: #ff00ff;
+    --neon-yellow: #ffff00;
+}
+
+body {
+    background: var(--bg-dark);
+    color: var(--neon-cyan);
+    font-family: 'Courier New', monospace;
+    margin: 0;
+    padding: 0;
+}
+
+h1 { color: var(--neon-magenta); text-shadow: 0 0 10px var(--neon-magenta); }
+h2 { color: var(--neon-yellow); }
+h3 { color: var(--neon-cyan); }
+
+.btn {
+    background: var(--neon-magenta);
+    color: var(--bg-dark);
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn:hover { background: var(--neon-cyan); box-shadow: 0 0 20px var(--neon-cyan); }
+
+.card {
+    background: var(--bg-card);
+    border: 2px solid var(--neon-cyan);
+    padding: 20px;
+    margin: 20px;
+    border-radius: 10px;
+}
+
+.price {
+    color: var(--neon-yellow);
+    font-size: 1.5em;
+    font-weight: bold;
+    margin: 10px 0;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+    padding: 20px;
+}
+
+.hero {
+    background: linear-gradient(135deg, var(--bg-card), var(--bg-dark));
+    padding: 100px 20px;
+    text-align: center;
+    border-bottom: 3px solid var(--neon-magenta);
+}
+
+.hero h1 {
+    font-size: 3em;
+    text-shadow: 0 0 20px var(--neon-cyan), 0 0 40px var(--neon-cyan);
+}
+
+.search {
+    padding: 20px;
+    text-align: center;
+}
+
+.search input {
+    padding: 10px;
+    width: 300px;
+    background: var(--bg-dark);
+    border: 1px solid var(--neon-cyan);
+    color: var(--neon-cyan);
+}
+
+.scanlines {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,0.1), rgba(0,0,0,0.1) 1px, transparent 1px, transparent 2px);
+    pointer-events: none;
+    z-index: 1000;
+}
