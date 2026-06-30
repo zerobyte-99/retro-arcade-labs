@@ -102,6 +102,11 @@ echo "=== LFI ==="
 test "LFI-001" 'curl -s "$BASE_URL/pages/translations.php?lang=config/database.php"' "DB_HOST\|mysqli"
 
 echo ""
+echo "=== DESERIALIZATION ==="
+test "DESERIAL-001" 'curl -s -b /tmp/arcade_cookie.txt "$BASE_URL/api/user/preferences.php"' "success\|preferences"
+test "DESERIAL-002" 'curl -s -X POST -b /tmp/arcade_cookie.txt "$BASE_URL/api/cart/serialize.php" -d "cart=O:15:\"MaliciousClass\":0:{}"' "success\|Invalid\|cart"
+
+echo ""
 echo "========================================"
 echo "RESULT: ✅ $PASS  |  ❌ $FAIL"
 echo "========================================"
