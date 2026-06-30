@@ -54,8 +54,8 @@ function get_current_user_data() {
     }
     global $db;
     $user_id = (int)$_SESSION['user_id'];
-    $result = db_query("SELECT * FROM users WHERE id = $user_id");
-    return db_fetch_assoc($result);
+    $result = query("SELECT * FROM users WHERE id = $user_id");
+    return fetch_assoc($result);
 }
 
 function require_login() {
